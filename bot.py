@@ -22,7 +22,7 @@ def send_to_telegram(message):
     # Strictly clean, pure official Telegram URL formulation
     # Zero dependency on string appending bugs
     token_clean = str(BOT_TOKEN).strip()
-    url = f"https://telegram.org{token_clean}/sendMessage"
+    url = f"https://api.telegram.org{token_clean}/sendMessage"
     
     payload = {
         "chat_id": str(CHAT_ID).strip(), 
