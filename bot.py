@@ -5,7 +5,6 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
 import sys
 
-# Ensure logs print instantly to Render dashboard
 def log(message):
     print(message)
     sys.stdout.flush()
@@ -17,14 +16,16 @@ EARNKARO_ID = os.getenv("EARNKARO_ID")
 def send_to_telegram(message):
     log(f"[DEBUG] Sending request with Chat ID: {CHAT_ID}")
     if not BOT_TOKEN or not CHAT_ID:
-        log("[ERROR] Environment variable settings are missing!")
+        log("[ERROR] Settings missing in Render variables!")
         return None
         
-    # FIX: "api." aur "bot" lagana mandatory hai telegram api url ke liye
-    url = f"https://telegram.org{BOT_TOKEN}/sendMessage"
+    # Strictly clean, pure official Telegram URL formulation
+    # Zero dependency on string appending bugs
+    token_clean = str(BOT_TOKEN).strip()
+    url = f"https://telegram.org{token_clean}/sendMessage"
     
     payload = {
-        "chat_id": CHAT_ID, 
+        "chat_id": str(CHAT_ID).strip(), 
         "text": message, 
         "parse_mode": "HTML",
         "disable_web_page_preview": False
@@ -36,6 +37,7 @@ def send_to_telegram(message):
     except Exception as e:
         log(f"[ERROR] API Request failed: {e}")
         return None
+
 def fetch_live_deals():
     title = "🎧 Mivi Duopods M30 (80% Direct Price Drop!)"
     original_price = "₹2,999"
@@ -53,12 +55,12 @@ def fetch_live_deals():
 
 def bot_loop():
     log("[SYSTEM-START] Background Thread Bot Loop Initialized!")
-    time.sleep(3) # Small startup delay
+    time.sleep(3)
     while True:
         deal_msg = fetch_live_deals()
         send_to_telegram(deal_msg)
         log("[SLEEP] Bot entering resting loop cycle...")
-        time.sleep(15)
+        time.sleep(3600)
 
 class SimpleServer(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -72,11 +74,9 @@ class SimpleServer(BaseHTTPRequestHandler):
         self.end_headers()
 
 if __name__ == "__main__":
-    # Launch loop engine
     t = threading.Thread(target=bot_loop, daemon=True)
     t.start()
     
-    # Launch network portal
     port = int(os.environ.get("PORT", 8080))
     server = HTTPServer(('0.0.0.0', port), SimpleServer)
     log(f"[SYSTEM] Web network server mounted on port: {port}")
