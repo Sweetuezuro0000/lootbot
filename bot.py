@@ -49,6 +49,10 @@ class SimpleServer(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(b"Bot is alive and running safely!")
+        
+    def do_HEAD(self):
+        self.send_response(200)
+        self.end_headers()
 
 if __name__ == "__main__":
     # Start bot loop in a background thread
