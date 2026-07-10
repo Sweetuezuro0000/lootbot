@@ -9,15 +9,24 @@ CHAT_ID = os.getenv("CHAT_ID")
 EARNKARO_ID = os.getenv("EARNKARO_ID")
 
 def send_to_telegram(message):
+    print(f"[DEBUG] Message bhejne ki koshish... Token available: {bool(BOT_TOKEN)}, Chat ID: {CHAT_ID}")
     if not BOT_TOKEN or not CHAT_ID:
-        print("Error: Tokens missing!")
+        print("[ERROR] Render settings mein BOT_TOKEN ya CHAT_ID missing hai!")
         return None
+        
     url = f"https://telegram.org{BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
+    payload = {
+        "chat_id": CHAT_ID, 
+        "text": message, 
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": False
+    }
     try:
-        return requests.post(url, json=payload).json()
+        res = requests.post(url, json=payload, timeout=10)
+        print(f"[TELEGRAM RESPONSE LOGS]: {res.text}")
+        return res.json()
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"[ERROR] Connection failed: {e}")
         return None
 
 def fetch_live_deals():
@@ -36,13 +45,15 @@ def fetch_live_deals():
     )
 
 def bot_loop():
-    print("Bot loop running...")
+    print("[DEBUG] Background Bot Loop Shuru Ho Gaya Hai!")
+    # Render loop fass na jaye isliye thoda delay dekar chalayenge
+    time.sleep(5) 
     while True:
         deal_msg = fetch_live_deals()
         send_to_telegram(deal_msg)
+        print("[DEBUG] Bot ab 1 ghante ke liye sleep mode mein jaa raha hai...")
         time.sleep(3600)
 
-# Dummy Server to satisfy Render Free Web Service
 class SimpleServer(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -55,11 +66,12 @@ class SimpleServer(BaseHTTPRequestHandler):
         self.end_headers()
 
 if __name__ == "__main__":
-    # Start bot loop in a background thread
-    threading.Thread(target=bot_loop, daemon=True).start()
+    # Start bot loop thread
+    t = threading.Thread(target=bot_loop, daemon=True)
+    t.start()
     
-    # Start free web server on port Render provides
+    # Start web server
     port = int(os.environ.get("PORT", 8080))
     server = HTTPServer(('0.0.0.0', port), SimpleServer)
-    print(f"Server started on port {port}")
+    print(f"[SYSTEM] Server started on port {port}")
     server.serve_forever()
