@@ -1,15 +1,20 @@
 import requests
 import time
+import os
 
 # ========================================================
-# APNI DETAILS SIRF IN TEEN LINES MEIN BADO
+# RENDER KE ENVIRONMENT VARIABLES SE AUTOMATIC UTHAYEGA
 # ========================================================
-BOT_TOKEN = "8832874283:AAFD9Snxn3IAKbgb_1pFjkvXTQ4UaCgtqZM"
-CHAT_ID = "@lootdealsIndiaJ" 
-EARNKARO_ID = "1706756" 
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
+EARNKARO_ID = os.getenv("EARNKARO_ID")
 # ========================================================
 
 def send_to_telegram(message):
+    if not BOT_TOKEN or not CHAT_ID:
+        print("Error: BOT_TOKEN ya CHAT_ID missing hai Render settings mein!")
+        return None
+        
     url = f"https://telegram.org{BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID, 
@@ -25,17 +30,14 @@ def send_to_telegram(message):
         return None
 
 def fetch_live_deals():
-    # Yeh ek free open source api hai jo live e-commerce price drops track karti hai [1]
-    # Agar kisi wajah se api down ho, toh yeh backup test deal bhej dega
     try:
-        api_url = "https://dotpe.in" # Open public business trends api [1]
+        api_url = "https://dotpe.in"
         headers = {"User-Agent": "Mozilla/5.0"}
         res = requests.get(api_url, headers=headers, timeout=10)
         
         if res.status_code == 200:
             data = res.json()
-            # API se live item nikalna
-            product = data['products'][0] 
+            product = data['products'] 
             title = product['title']
             original_price = f"₹{product['mrp']}"
             loot_price = f"₹{product['price']}"
@@ -44,13 +46,11 @@ def fetch_live_deals():
             raise Exception("API Defaulted")
             
     except Exception:
-        # BACKUP REAL DEAL (Agar internet api slow ho toh yeh chala jayega)
         title = "🎧 Mivi Duopods M30 (80% Direct Price Drop!)"
         original_price = "₹2,999"
         loot_price = "₹599"
         product_url = "https://amazon.in"
 
-    # Aapka EarnKaro automatic link converter format
     affiliate_link = f"https://topdeal.co{EARNKARO_ID}?dl={product_url}"
     
     msg = (
@@ -64,12 +64,10 @@ def fetch_live_deals():
     return msg
 
 if __name__ == "__main__":
-    print("Bot chalu ho rha hai... Live deal nikal raha hoon...")
+    print("Bot chalu ho rha hai...")
     while True:
         deal_msg = fetch_live_deals()
         status = send_to_telegram(deal_msg)
         print("Telegram Status:", status)
-        
-        # Har 1 ghante (3600 seconds) me automatic naya post jayega channel me
         print("Ab bot 1 ghante ke liye so raha hai...")
         time.sleep(3600) 
