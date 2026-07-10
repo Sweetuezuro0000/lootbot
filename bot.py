@@ -3,30 +3,36 @@ import time
 import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
+import sys
+
+# Ensure logs print instantly to Render dashboard
+def log(message):
+    print(message)
+    sys.stdout.flush()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 EARNKARO_ID = os.getenv("EARNKARO_ID")
 
 def send_to_telegram(message):
-    print(f"[DEBUG] Message bhejne ki koshish... Token available: {bool(BOT_TOKEN)}, Chat ID: {CHAT_ID}")
+    log(f"[DEBUG] Sending request with Chat ID: {CHAT_ID}")
     if not BOT_TOKEN or not CHAT_ID:
-        print("[ERROR] Render settings mein BOT_TOKEN ya CHAT_ID missing hai!")
+        log("[ERROR] Environment variable settings are missing!")
         return None
         
     url = f"https://telegram.org{BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID, 
         "text": message, 
-        "parse_mode": "Markdown",
+        "parse_mode": "HTML",  # Changed to HTML to avoid strict markdown bugs
         "disable_web_page_preview": False
     }
     try:
-        res = requests.post(url, json=payload, timeout=10)
-        print(f"[TELEGRAM RESPONSE LOGS]: {res.text}")
+        res = requests.post(url, json=payload, timeout=12)
+        log(f"[TELEGRAM API OUTPUT]: {res.text}")
         return res.json()
     except Exception as e:
-        print(f"[ERROR] Connection failed: {e}")
+        log(f"[ERROR] API Request failed: {e}")
         return None
 
 def fetch_live_deals():
@@ -37,41 +43,40 @@ def fetch_live_deals():
     affiliate_link = f"https://topdeal.co{EARNKARO_ID}?dl={product_url}"
     
     return (
-        f"🚨 *LOOT ALERT: JALDI LOOTO!* 🚨\n\n"
-        f"🔥 *{title}*\n"
+        f"🚨 <b>LOOT ALERT: JALDI LOOTO!</b> 🚨\n\n"
+        f"🔥 <b>{title}</b>\n"
         f"❌ Puraani Keemat: {original_price}\n"
-        f"💰 *Loot Offer Rate: {loot_price}*\n\n"
-        f"👉 *Khareedne Ka Link:* {affiliate_link}"
+        f"💰 <b>Loot Offer Rate: {loot_price}</b>\n\n"
+        f"👉 <a href='{affiliate_link}'><b>Khareedne Ka Link Click Karein</b></a>"
     )
 
 def bot_loop():
-    print("[DEBUG] Background Bot Loop Shuru Ho Gaya Hai!")
-    # Render loop fass na jaye isliye thoda delay dekar chalayenge
-    time.sleep(5) 
+    log("[SYSTEM-START] Background Thread Bot Loop Initialized!")
+    time.sleep(3) # Small startup delay
     while True:
         deal_msg = fetch_live_deals()
         send_to_telegram(deal_msg)
-        print("[DEBUG] Bot ab 1 ghante ke liye sleep mode mein jaa raha hai...")
-        time.sleep(3600)
+        log("[SLEEP] Bot entering resting loop cycle...")
+        time.sleep(15)
 
 class SimpleServer(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        self.wfile.write(b"Bot is alive and running safely!")
+        self.wfile.write(b"Bot system is alive and operational!")
         
     def do_HEAD(self):
         self.send_response(200)
         self.end_headers()
 
 if __name__ == "__main__":
-    # Start bot loop thread
+    # Launch loop engine
     t = threading.Thread(target=bot_loop, daemon=True)
     t.start()
     
-    # Start web server
+    # Launch network portal
     port = int(os.environ.get("PORT", 8080))
     server = HTTPServer(('0.0.0.0', port), SimpleServer)
-    print(f"[SYSTEM] Server started on port {port}")
+    log(f"[SYSTEM] Web network server mounted on port: {port}")
     server.serve_forever()
