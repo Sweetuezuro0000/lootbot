@@ -20,11 +20,13 @@ def send_to_telegram(message):
         log("[ERROR] Environment variable settings are missing!")
         return None
         
+    # FIX: "api." aur "bot" lagana mandatory hai telegram api url ke liye
     url = f"https://telegram.org{BOT_TOKEN}/sendMessage"
+    
     payload = {
         "chat_id": CHAT_ID, 
         "text": message, 
-        "parse_mode": "HTML",  # Changed to HTML to avoid strict markdown bugs
+        "parse_mode": "HTML",
         "disable_web_page_preview": False
     }
     try:
@@ -34,7 +36,6 @@ def send_to_telegram(message):
     except Exception as e:
         log(f"[ERROR] API Request failed: {e}")
         return None
-
 def fetch_live_deals():
     title = "🎧 Mivi Duopods M30 (80% Direct Price Drop!)"
     original_price = "₹2,999"
